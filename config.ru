@@ -4,8 +4,6 @@ require 'riemann/dash'
 require 'riemann/dash/browser_config'
 require 'redis'
 
-$redis = Redis.new
-
 class RedisConfigStore
   def read
     $redis.get("riemann-dash-config") || "{}"
@@ -23,6 +21,11 @@ class RedisConfigStore
     $redis.set("riemann-dash-config", MultiJson.encode(new, :pretty => true))
   end
 end
+
+ENV["REDIS_URL"] ||= ENV["REDISTOGO_URL"]
+ENV["REDIS_URL"] ||= "redis://localhost:6379"
+uri = URI.parse(ENV["REDIS_URL"])
+$redis = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
 
 Riemann::Dash::App.load(nil)
 Riemann::Dash::BrowserConfig.backend = RedisConfigStore.new
